@@ -1,0 +1,72 @@
+﻿<Window x:Class="MediaOverlayWPF.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:MediaOverlayWPF"
+        xmlns:viewModels="clr-namespace:MediaOverlayWPF.ViewModels"
+        mc:Ignorable="d"
+        Width="{Binding Source={x:Static SystemParameters.PrimaryScreenWidth}}"
+        Loaded="Window_Loaded"
+        Title="MainWindow" Height="450" Topmost="True" SizeToContent="Height" ResizeMode="NoResize" Background="{x:Null}" WindowStyle="None" WindowStartupLocation="Manual" Foreground="White">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Button Content="Toggle" Height="3" Click="ToggleMainContainerVisibility_ButtonClick"/>
+
+        <Grid x:Name="MainContainer" Background="#72382344" VerticalAlignment="Top" Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <Image Height="25" Width="25" OpacityMask="Black" VerticalAlignment="Center" Source="{Binding Thumbnail}" Grid.Column="0"/>
+
+                <Grid VerticalAlignment="Top" Grid.Column="1">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Top" Grid.Column="1">
+                        <Label x:Name="MediaTitleLabel" Content="{Binding CurrentSessionProperties.Title, TargetNullValue='wawa'}" FontSize="16" VerticalAlignment="Center" FontWeight="Bold" Foreground="White"/>
+                        <Label Content=" - " VerticalAlignment="Center" FontSize="16" FontWeight="Bold" Foreground="White"/>
+                        <Label x:Name="MediaArtistLabel" Content="{Binding CurrentSessionProperties.Artist, TargetNullValue='blebleee'}" VerticalAlignment="Center" FontSize="12" FontWeight="Bold" Foreground="White" OpacityMask="#8affffff"/>
+                    </StackPanel>
+
+                    <Slider Grid.Row="1">
+                        <Slider.Template>
+                            <ControlTemplate>
+                                <Grid VerticalAlignment="Center" Height="6">
+                                    <Border Background="Purple" Height="3" IsManipulationEnabled="False"/>
+
+                                    <Track x:Name="PART_Track" >
+                                        <Track.Thumb>
+                                            <Thumb Height="6" Width="12" />
+                                        </Track.Thumb>
+                                    </Track>
+                                </Grid>
+                            </ControlTemplate>
+                        </Slider.Template>
+                    </Slider>
+                </Grid>
+            </Grid>
+
+            <StackPanel VerticalAlignment="Center" Orientation="Horizontal" HorizontalAlignment="Right" Grid.Column="1" >
+                <Button VerticalAlignment="Center" Content="&lt;" FontWeight="Bold" HorizontalAlignment="Left" Command="{Binding TryPlayPreviousCommand}" />
+                <Button HorizontalAlignment="Left" VerticalAlignment="Center" FontWeight="Bold" Content="Toggle" Command="{Binding TryTogglePlayPauseCommand}" />
+                <Button HorizontalAlignment="Left" VerticalAlignment="Center" FontWeight="Bold" Content="&gt;" Command="{Binding TryPlayNextCommand}" />
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>
