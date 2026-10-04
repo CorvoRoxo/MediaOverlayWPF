@@ -5,12 +5,27 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MediaOverlayWPF"
         xmlns:viewModels="clr-namespace:MediaOverlayWPF.ViewModels"
+        xmlns:classes="clr-namespace:MediaOverlayWPF.Classes"
         mc:Ignorable="d"
         Width="{Binding Source={x:Static SystemParameters.PrimaryScreenWidth}}"
         Loaded="Window_Loaded"
-        Title="MainWindow" Height="450" Topmost="True" SizeToContent="Height" ResizeMode="NoResize" Background="{x:Null}" WindowStyle="None" WindowStartupLocation="Manual" Foreground="White">
+        Title="Lero lero lero" Topmost="True" SizeToContent="Height" ResizeMode="NoResize" Background="{x:Null}" WindowStyle="None" WindowStartupLocation="Manual" Foreground="White">
 
-    <Grid>
+    <Window.Resources>
+        <Style TargetType="Button" x:Key="MediaControllerButton">
+            <Setter Property="Width" Value="20"/>
+            <Setter Property="Height" Value="20"/>
+
+            <Setter Property="BorderBrush" Value="#FF462B5A"/>
+            <Setter Property="Background" Value="#FF574B5F"/>
+        </Style>
+
+        <Style TargetType="Label">
+            <Setter Property="Padding" Value="5, 0"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid VerticalAlignment="Top">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -30,7 +45,19 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <Image Height="25" Width="25" OpacityMask="Black" VerticalAlignment="Center" Source="{Binding Thumbnail}" Grid.Column="0"/>
+                <Image Height="25" Width="25" OpacityMask="Black" VerticalAlignment="Center" HorizontalAlignment="Left">
+                    <Image.Source>
+                        <Binding Path="MediaManagerVM.CurrentSessionProperties.Thumbnail">
+                            <Binding.TargetNullValue>
+                                <BitmapImage UriSource="/Images/SNAKE.png"/>
+                            </Binding.TargetNullValue>
+
+                            <Binding.FallbackValue>
+                                <BitmapImage UriSource="/Images/SNAKE.png"/>
+                            </Binding.FallbackValue>
+                        </Binding>
+                    </Image.Source>
+                </Image>
 
                 <Grid VerticalAlignment="Top" Grid.Column="1">
                     <Grid.RowDefinitions>
@@ -39,33 +66,47 @@
                     </Grid.RowDefinitions>
 
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Top" Grid.Column="1">
-                        <Label x:Name="MediaTitleLabel" Content="{Binding CurrentSessionProperties.Title, TargetNullValue='wawa'}" FontSize="16" VerticalAlignment="Center" FontWeight="Bold" Foreground="White"/>
-                        <Label Content=" - " VerticalAlignment="Center" FontSize="16" FontWeight="Bold" Foreground="White"/>
-                        <Label x:Name="MediaArtistLabel" Content="{Binding CurrentSessionProperties.Artist, TargetNullValue='blebleee'}" VerticalAlignment="Center" FontSize="12" FontWeight="Bold" Foreground="White" OpacityMask="#8affffff"/>
+                        <Label x:Name="MediaTitleLabel" Content="{Binding MediaManagerVM.CurrentSessionProperties.Title, TargetNullValue='None', FallbackValue='None'}" FontSize="10" VerticalAlignment="Center" FontWeight="Bold" Foreground="White"/>
+                        <Label x:Name="MediaArtistLabel" Content="{Binding MediaManagerVM.CurrentSessionProperties.Artist, TargetNullValue='Who is this', FallbackValue='Who is this'}" VerticalAlignment="Center" FontSize="8" FontWeight="Bold" Foreground="White" OpacityMask="#8affffff"/>
                     </StackPanel>
 
-                    <Slider Grid.Row="1">
+                    <Slider Value="{Binding AudioManagerVM.Volume, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Minimum="0" Maximum="100" Margin="5, 0" Grid.Row="1">
                         <Slider.Template>
                             <ControlTemplate>
                                 <Grid VerticalAlignment="Center" Height="6">
-                                    <Border Background="Purple" Height="3" IsManipulationEnabled="False"/>
+                                    <Border Background="#A22AED" Height="6" IsManipulationEnabled="False"/>
 
                                     <Track x:Name="PART_Track" >
                                         <Track.Thumb>
-                                            <Thumb Height="6" Width="12" />
+                                            <Thumb Height="6" Width="32" />
                                         </Track.Thumb>
                                     </Track>
                                 </Grid>
                             </ControlTemplate>
                         </Slider.Template>
                     </Slider>
+
                 </Grid>
             </Grid>
 
             <StackPanel VerticalAlignment="Center" Orientation="Horizontal" HorizontalAlignment="Right" Grid.Column="1" >
-                <Button VerticalAlignment="Center" Content="&lt;" FontWeight="Bold" HorizontalAlignment="Left" Command="{Binding TryPlayPreviousCommand}" />
-                <Button HorizontalAlignment="Left" VerticalAlignment="Center" FontWeight="Bold" Content="Toggle" Command="{Binding TryTogglePlayPauseCommand}" />
-                <Button HorizontalAlignment="Left" VerticalAlignment="Center" FontWeight="Bold" Content="&gt;" Command="{Binding TryPlayNextCommand}" />
+                <Button Style="{StaticResource MediaControllerButton}" Command="{Binding MediaManagerVM.TryPlayPreviousCommand}">
+                    <Button.Content>
+                        <Image Source="/Images/previous_small.png" Width="16" Height="16" />
+                    </Button.Content>
+                </Button>
+
+                <Button Style="{StaticResource MediaControllerButton}" Command="{Binding MediaManagerVM.TryTogglePlayPauseCommand}">
+                    <Button.Content>
+                        <Image Source="/Images/play_small.png" Width="16" Height="16" />
+                    </Button.Content>
+                </Button>
+
+                <Button Style="{StaticResource MediaControllerButton}" Command="{Binding MediaManagerVM.TryPlayNextCommand}">
+                    <Button.Content>
+                        <Image Source="/Images/next_small.png" Width="16" Height="16" />
+                    </Button.Content>
+                </Button>
             </StackPanel>
         </Grid>
     </Grid>

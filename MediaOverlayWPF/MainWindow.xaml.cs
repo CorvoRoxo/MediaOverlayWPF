@@ -9,10 +9,12 @@ namespace MediaOverlayWPF
     /// </summary>
     public partial class MainWindow : Window
     {
+        ViewModelLocator PageViewModel = new();
+
         public MainWindow()
         {
             InitializeComponent();
-            this.DataContext = App.ServiceProvider.GetRequiredService<MediaManagerViewModel>();
+            this.DataContext = PageViewModel;
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -27,5 +29,11 @@ namespace MediaOverlayWPF
         {
             MainContainer.Visibility = MainContainer.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
         }
+    }
+
+    public class ViewModelLocator
+    {
+        public MediaManagerViewModel MediaManagerVM => App.ServiceProvider.GetRequiredService<MediaManagerViewModel>();
+        public AudioManagerViewModel AudioManagerVM => App.ServiceProvider.GetRequiredService<AudioManagerViewModel>();
     }
 }
