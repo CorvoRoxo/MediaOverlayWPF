@@ -4,6 +4,11 @@
              xmlns:local="clr-namespace:MediaOverlayWPF"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-       
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Styles/WindowDarkTheme.xaml"/>
+                <ResourceDictionary Source="/Styles/AppCompactedMode.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
     </Application.Resources>
 </Application>

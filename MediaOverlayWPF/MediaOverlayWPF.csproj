@@ -6,6 +6,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <StartupObject>MediaOverlayWPF.App</StartupObject>
+    <ApplicationIcon>ble.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,6 +17,10 @@
     <None Remove="play.png" />
     <None Remove="previous.png" />
     <None Remove="SNAKE.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="ble.ico" />
   </ItemGroup>
 
   <ItemGroup>

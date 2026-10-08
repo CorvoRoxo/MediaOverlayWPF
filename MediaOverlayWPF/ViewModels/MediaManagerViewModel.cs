@@ -2,35 +2,34 @@
 using CommunityToolkit.Mvvm.Input;
 using System.Diagnostics;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using Windows.Media.Control;
 
 namespace MediaOverlayWPF.ViewModels
 {
     public partial class MediaManagerViewModel : ObservableObject, IDisposable
     {
-        private readonly IDispatcherService _DispatcherService;
-
-        public GlobalSystemMediaTransportControlsSessionManager? MediaManager { get; set; }
-
-        [ObservableProperty]
-        public partial MediaProperties? CurrentSessionProperties { get; private set; }
+        private GlobalSystemMediaTransportControlsSessionManager? SessionManager;
+        private GlobalSystemMediaTransportControlsSession? CurrentSession;
+        private CancellationTokenSource? DebounceTokenSource;
 
         [ObservableProperty]
-        public partial BitmapImage Thumbnail { get; private set; } = new();
+        public partial MediaProperties? CurrentMediaProperties { get; private set; }
 
-        public MediaManagerViewModel(IDispatcherService dispatcherService)
+        [ObservableProperty]
+        public partial GlobalSystemMediaTransportControlsSessionPlaybackInfo? CurrentPlaybackInfo { get; private set; }
+
+        [ObservableProperty]
+        public partial MediaTimeline CurrentTimelineProperties { get; private set; } = new();
+
+        public MediaManagerViewModel()
         {
-            _DispatcherService = dispatcherService;
             InitializeMediaManager();
         }
 
         [RelayCommand]
         public async Task TryTogglePlayPause()
         {
-            if (MediaManager is null)
-                return;
-
-            GlobalSystemMediaTransportControlsSession CurrentSession = MediaManager.GetCurrentSession();
             if (CurrentSession is null)
                 return;
 
@@ -40,10 +39,6 @@ namespace MediaOverlayWPF.ViewModels
         [RelayCommand]
         public async Task TryPlayNext()
         {
-            if (MediaManager is null)
-                return;
-
-            GlobalSystemMediaTransportControlsSession CurrentSession = MediaManager.GetCurrentSession();
             if (CurrentSession is null)
                 return;
 
@@ -53,10 +48,6 @@ namespace MediaOverlayWPF.ViewModels
         [RelayCommand]
         public async Task TryPlayPrevious()
         {
-            if (MediaManager is null)
-                return;
-
-            GlobalSystemMediaTransportControlsSession CurrentSession = MediaManager.GetCurrentSession();
             if (CurrentSession is null)
                 return;
 
@@ -65,48 +56,111 @@ namespace MediaOverlayWPF.ViewModels
 
         private async void InitializeMediaManager()
         {
-            MediaManager = await GlobalSystemMediaTransportControlsSessionManager.RequestAsync();
-            MediaManager.CurrentSessionChanged += MediaManager_CurrentSessionChanged;
-            MediaManager.SessionsChanged += MediaManager_SessionsChanged;
+            SessionManager = await GlobalSystemMediaTransportControlsSessionManager.RequestAsync();
+            SessionManager.CurrentSessionChanged += MediaManager_CurrentSessionChanged;
+            SessionManager.SessionsChanged += SessionManager_SessionsChanged;
 
-            UpdateCurrentSessionProperties();
+            UpdateCurrentSession();
         }
+
+        private void SessionManager_SessionsChanged(GlobalSystemMediaTransportControlsSessionManager sender, SessionsChangedEventArgs args)
+            => UpdateCurrentSession();
 
         public void Dispose()
         {
-            if (MediaManager is null)
+            if (SessionManager is null)
                 return;
 
-            MediaManager.CurrentSessionChanged -= MediaManager_CurrentSessionChanged;
-            MediaManager.SessionsChanged -= MediaManager_SessionsChanged;
+            SessionManager.CurrentSessionChanged -= MediaManager_CurrentSessionChanged;
+            SessionManager.SessionsChanged -= SessionManager_SessionsChanged;
         }
 
-        private void MediaManager_SessionsChanged(GlobalSystemMediaTransportControlsSessionManager sender, SessionsChangedEventArgs args)
-            => UpdateCurrentSessionProperties();
         private void MediaManager_CurrentSessionChanged(GlobalSystemMediaTransportControlsSessionManager sender, CurrentSessionChangedEventArgs args)
-            => UpdateCurrentSessionProperties();
+            => UpdateCurrentSession();
 
-        private async void UpdateCurrentSessionProperties()
+        private void CurrentSession_MediaPropertiesChanged(GlobalSystemMediaTransportControlsSession sender, MediaPropertiesChangedEventArgs args)
+            => UpdateMediaProperties();
+
+        private void CurrentSession_PlaybackInfoChanged(GlobalSystemMediaTransportControlsSession sender, PlaybackInfoChangedEventArgs args)
+            => UpdateMediaProperties();
+
+        public async void UpdateCurrentSession()
         {
-            if (MediaManager is null)
+            if (SessionManager is null)
                 return;
 
-            GlobalSystemMediaTransportControlsSession CurrentSession = MediaManager.GetCurrentSession();
+            if (CurrentSession is not null)
+            { 
+                CurrentSession.MediaPropertiesChanged -= CurrentSession_MediaPropertiesChanged;
+                CurrentSession.PlaybackInfoChanged -= CurrentSession_PlaybackInfoChanged;
+                CurrentSession.TimelinePropertiesChanged -= CurrentSession_TimelinePropertiesChanged;
+            }
+
+            CurrentSession = SessionManager.GetCurrentSession();
+
             if (CurrentSession is null)
                 return;
 
-            await Task.Delay(200);
+            CurrentSession.MediaPropertiesChanged += CurrentSession_MediaPropertiesChanged;
+            CurrentSession.PlaybackInfoChanged += CurrentSession_PlaybackInfoChanged;
+            CurrentSession.TimelinePropertiesChanged += CurrentSession_TimelinePropertiesChanged;
+
+            UpdateMediaProperties();
+            UpdateTimelineProperties();
+        }
+
+        private void CurrentSession_TimelinePropertiesChanged(GlobalSystemMediaTransportControlsSession sender, TimelinePropertiesChangedEventArgs args)
+            => UpdateTimelineProperties();
+        public async void UpdateTimelineProperties()
+        {
+            if (CurrentSession is null || CurrentPlaybackInfo is null)
+                return;
+
             try
             {
-                Task<GlobalSystemMediaTransportControlsSessionMediaProperties> MediaProperties = await _DispatcherService.InvokeAsync(async () =>
-                        await CurrentSession.TryGetMediaPropertiesAsync().AsTask());
-                
-                CurrentSessionProperties = new(await MediaProperties);
+                await Task.Delay(50);
+                GlobalSystemMediaTransportControlsSessionTimelineProperties TimeLine = CurrentSession.GetTimelineProperties();
+                CurrentTimelineProperties.UpdateTimeline(TimeLine, CurrentPlaybackInfo.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing);
+
+                Debug.WriteLine($"PlaybackStatus inside UpdateTimelineProperties(): {CurrentPlaybackInfo.PlaybackStatus}");
             }
-            catch (Exception Ex)
+            catch (Exception) { }
+        }
+
+        public async void UpdateMediaProperties()
+        {
+            DebounceTokenSource?.Cancel();
+            DebounceTokenSource = new();
+
+            CancellationToken Token = DebounceTokenSource.Token;
+
+            await Task.Run(async () =>
             {
-                Debug.WriteLine(Ex);
-            }
+                try
+                {
+                    if (CurrentSession is null)
+                    {
+                        CurrentMediaProperties = null;
+                        return;
+                    }
+
+                    GlobalSystemMediaTransportControlsSessionPlaybackInfo? PlaybackInfo = CurrentSession.GetPlaybackInfo();
+                    CurrentPlaybackInfo = PlaybackInfo;
+
+                    await Task.Delay(200, Token);
+                    if (Token.IsCancellationRequested)
+                        return;          
+
+                    GlobalSystemMediaTransportControlsSessionMediaProperties? MediaProperties = await CurrentSession.TryGetMediaPropertiesAsync();
+
+                    if (MediaProperties is null || PlaybackInfo is null)
+                        return;
+
+                    CurrentMediaProperties = new(MediaProperties);
+                }
+                catch (TaskCanceledException) { }
+                catch (Exception) { }
+            });
         }
     }
 }

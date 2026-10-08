@@ -9,31 +9,60 @@
         mc:Ignorable="d"
         Width="{Binding Source={x:Static SystemParameters.PrimaryScreenWidth}}"
         Loaded="Window_Loaded"
-        Title="Lero lero lero" Topmost="True" SizeToContent="Height" ResizeMode="NoResize" Background="{x:Null}" WindowStyle="None" WindowStartupLocation="Manual" Foreground="White">
+        Style="{DynamicResource WindowTheme}"
+        Title="Lero lero lero" Topmost="True" SizeToContent="Height" ResizeMode="NoResize" WindowStyle="None" WindowStartupLocation="Manual" Foreground="White">
 
     <Window.Resources>
-        <Style TargetType="Button" x:Key="MediaControllerButton">
-            <Setter Property="Width" Value="20"/>
-            <Setter Property="Height" Value="20"/>
-
-            <Setter Property="BorderBrush" Value="#FF462B5A"/>
-            <Setter Property="Background" Value="#FF574B5F"/>
-        </Style>
-
         <Style TargetType="Label">
             <Setter Property="Padding" Value="5, 0"/>
         </Style>
-    </Window.Resources>
 
+        <classes:PlaybackStatusToImageConverter x:Key="PlaybackStatusToImage"/>
+    </Window.Resources>
+    
+    <!-- App's main grid -->
     <Grid VerticalAlignment="Top">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
+        
+        <!-- app's visibility toggler -->
+        <Button x:Name="ContainersVisibilityTogglerButton" Content="Toggle" Height="3" Click="ToggleMainContainerVisibility_ButtonClick" MouseRightButtonDown="ToggleOptionsContainerVisibility_MouseRightButtonDown"/>
+    
+        <!-- Menu Container -->
+        <Grid x:Name="OptionsContainer" Grid.Row="1" Background="#6a000000">
+            <StackPanel Orientation="Horizontal">
+                
+                <!-- App's style menu button -->
+                <Button Style="{DynamicResource MenubuttonVisualStyle}" Content="Miau" Click="OptionsMenu_ButtonClick">
+                    <Button.ContextMenu>
+                        <ContextMenu Placement="Mouse">
+                            <MenuItem Header="TO TOP" Click="ChangeAppPosition_MenuItemClick"/>
+                            <MenuItem Header="TO BOTTOM" Click="ChangeAppPosition_MenuItemClick"/>
 
-        <Button Content="Toggle" Height="3" Click="ToggleMainContainerVisibility_ButtonClick"/>
+                            <MenuItem Header="force UI to update" Click="ForceUIUpdateMenuItem_Click"/>
+                            
+                            <MenuItem Header="Styles">
+                                <MenuItem Header="compacted" Click="ChangeAppStyle_MenuItemClick"/>
+                                <MenuItem Header='"detailed"' Click="ChangeAppStyle_MenuItemClick"/>
+                            </MenuItem>
 
-        <Grid x:Name="MainContainer" Background="#72382344" VerticalAlignment="Top" Grid.Row="1">
+                            <MenuItem Header="Thmees">
+                                <MenuItem Header="light" Click="ChangeAppTheme_MenuItemClick"/>
+                                <MenuItem Header="dark" Click="ChangeAppTheme_MenuItemClick"/>
+                            </MenuItem>
+                        </ContextMenu>
+                    </Button.ContextMenu>
+                </Button>
+                
+                <Button Style="{DynamicResource MenubuttonVisualStyle}" Content="FORCE UI UUUPDATE" Click="ForceUIUpdateMenuItem_Click" />
+            </StackPanel>
+        </Grid>
+        
+        <!-- Media display container -->
+        <Grid x:Name="MainContainer" VerticalAlignment="Top" Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
@@ -44,10 +73,11 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-
-                <Image Height="25" Width="25" OpacityMask="Black" VerticalAlignment="Center" HorizontalAlignment="Left">
+                
+                <!-- Media Thumbnail -->
+                <Image Style="{DynamicResource MediaThumbnailImageVisualStyle}" VerticalAlignment="Center" HorizontalAlignment="Left">
                     <Image.Source>
-                        <Binding Path="MediaManagerVM.CurrentSessionProperties.Thumbnail">
+                        <Binding Path="MediaManagerVM.CurrentMediaProperties.Thumbnail">
                             <Binding.TargetNullValue>
                                 <BitmapImage UriSource="/Images/SNAKE.png"/>
                             </Binding.TargetNullValue>
@@ -58,51 +88,73 @@
                         </Binding>
                     </Image.Source>
                 </Image>
-
+                
                 <Grid VerticalAlignment="Top" Grid.Column="1">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
+                    
+                    <!-- Media Title and Artist -->
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Top" Grid.Column="1">
+                            <Label Content="{Binding MediaManagerVM.CurrentMediaProperties.Title, TargetNullValue='None', FallbackValue='None'}" FontSize="10" VerticalAlignment="Center" FontWeight="Bold" Foreground="{DynamicResource Foreground}"/>
+                            <Label Content="{Binding MediaManagerVM.CurrentMediaProperties.Artist, TargetNullValue='Who is this', FallbackValue='Who is this'}" VerticalAlignment="Center" FontSize="8" FontWeight="Bold" Foreground="{DynamicResource Foreground}" OpacityMask="#8affffff"/>
 
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Top" Grid.Column="1">
-                        <Label x:Name="MediaTitleLabel" Content="{Binding MediaManagerVM.CurrentSessionProperties.Title, TargetNullValue='None', FallbackValue='None'}" FontSize="10" VerticalAlignment="Center" FontWeight="Bold" Foreground="White"/>
-                        <Label x:Name="MediaArtistLabel" Content="{Binding MediaManagerVM.CurrentSessionProperties.Artist, TargetNullValue='Who is this', FallbackValue='Who is this'}" VerticalAlignment="Center" FontSize="8" FontWeight="Bold" Foreground="White" OpacityMask="#8affffff"/>
+                            <!-- Extra media details -->
+                            <Label Style="{DynamicResource MediaDetailControlVisibility}" Content="{Binding MediaManagerVM.CurrentMediaProperties.AlbumTitle}" Foreground="{DynamicResource Foreground}" FontSize="10" FontWeight="Bold"/>
+                        </StackPanel>
                     </StackPanel>
 
-                    <Slider Value="{Binding AudioManagerVM.Volume, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Minimum="0" Maximum="100" Margin="5, 0" Grid.Row="1">
-                        <Slider.Template>
-                            <ControlTemplate>
-                                <Grid VerticalAlignment="Center" Height="6">
-                                    <Border Background="#A22AED" Height="6" IsManipulationEnabled="False"/>
+                    <StackPanel Grid.Row="1">
+                        <!-- Timeline container -->
+                        <StackPanel>
+                            <!-- Timeline details -->
+                            <StackPanel Style="{DynamicResource MediaDetailContainerVisibility}" Orientation="Horizontal" HorizontalAlignment="Left">
+                                <Label Content="{Binding MediaManagerVM.CurrentTimelineProperties.CurrentPosition, FallbackValue='00:00', TargetNullValue='00:00'}" ContentStringFormat="mm\:ss" FontWeight="Bold" FontSize="9" Foreground="{DynamicResource Foreground}"/>
+                                <Label Content="/" FontWeight="Bold" FontSize="9" Foreground="{DynamicResource Foreground}"/>
+                                <Label Content="{Binding MediaManagerVM.CurrentTimelineProperties.EndTime, FallbackValue='--:--', TargetNullValue='--:--'}" ContentStringFormat="mm\:ss" FontWeight="Bold" FontSize="9" Foreground="{DynamicResource Foreground}"/>
+                            </StackPanel>
 
-                                    <Track x:Name="PART_Track" >
-                                        <Track.Thumb>
-                                            <Thumb Height="6" Width="32" />
-                                        </Track.Thumb>
-                                    </Track>
-                                </Grid>
-                            </ControlTemplate>
-                        </Slider.Template>
-                    </Slider>
+                            <!-- Media Timeline -->
+                            <ProgressBar Value="{Binding MediaManagerVM.CurrentTimelineProperties.CurrentSeconds, Mode=OneWay}" Maximum="{Binding MediaManagerVM.CurrentTimelineProperties.TotalSeconds, Mode=OneWay}" Height="4" Foreground="#ED2AA2" Margin="6, 0"/>
+                        </StackPanel>
 
+                        <!-- Device volume slider -->
+                        <Slider Value="{Binding AudioManagerVM.Volume, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Minimum="0" Maximum="100" Height="5" Margin="6, 2">
+                            <Slider.Template>
+                                <ControlTemplate>
+                                    <Grid VerticalAlignment="Center">
+                                        <Border Background="#A22AED" Height="5" IsManipulationEnabled="False"/>
+
+                                        <Track x:Name="PART_Track">
+                                            <Track.Thumb>
+                                                <Thumb Height="6" Width="32" />
+                                            </Track.Thumb>
+                                        </Track>
+                                    </Grid>
+                                </ControlTemplate>
+                            </Slider.Template>
+                        </Slider>
+                    </StackPanel>
                 </Grid>
             </Grid>
 
-            <StackPanel VerticalAlignment="Center" Orientation="Horizontal" HorizontalAlignment="Right" Grid.Column="1" >
-                <Button Style="{StaticResource MediaControllerButton}" Command="{Binding MediaManagerVM.TryPlayPreviousCommand}">
+            <!-- Media controller container -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Column="1">
+                <Button Style="{DynamicResource MediaControllerButton}" Command="{Binding MediaManagerVM.TryPlayPreviousCommand}">
                     <Button.Content>
                         <Image Source="/Images/previous_small.png" Width="16" Height="16" />
                     </Button.Content>
                 </Button>
 
-                <Button Style="{StaticResource MediaControllerButton}" Command="{Binding MediaManagerVM.TryTogglePlayPauseCommand}">
+                <Button Style="{DynamicResource MediaControllerButton}" Command="{Binding MediaManagerVM.TryTogglePlayPauseCommand}">
                     <Button.Content>
-                        <Image Source="/Images/play_small.png" Width="16" Height="16" />
+                        <Image Source="{Binding MediaManagerVM.CurrentPlaybackInfo.PlaybackStatus, Converter={StaticResource PlaybackStatusToImage}}" Width="16" Height="16" />
                     </Button.Content>
                 </Button>
 
-                <Button Style="{StaticResource MediaControllerButton}" Command="{Binding MediaManagerVM.TryPlayNextCommand}">
+                <Button Style="{DynamicResource MediaControllerButton}" Command="{Binding MediaManagerVM.TryPlayNextCommand}">
                     <Button.Content>
                         <Image Source="/Images/next_small.png" Width="16" Height="16" />
                     </Button.Content>
