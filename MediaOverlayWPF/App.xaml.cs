@@ -29,7 +29,7 @@ namespace MediaOverlayWPF
             NewStyle.Source = new Uri($"Styles/{Style}.xaml", UriKind.Relative);
 
             Collection<ResourceDictionary> MergedDictionaries = App.Current.Resources.MergedDictionaries;
-            MergedDictionaries[0] = NewStyle;
+            MergedDictionaries[1] = NewStyle;
         }
 
         public static void ChangeTheme(string Theme)
@@ -38,7 +38,7 @@ namespace MediaOverlayWPF
             NewTheme.Source = new Uri($"Styles/{Theme}.xaml", UriKind.Relative);
 
             Collection<ResourceDictionary> MergedDictionaries = App.Current.Resources.MergedDictionaries;
-            5MergedDictionaries[1] = NewTheme;
+            MergedDictionaries[0] = NewTheme;
         }
 
         protected override void OnExit(ExitEventArgs e)
